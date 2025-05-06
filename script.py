@@ -26,7 +26,7 @@ object_columns = ['is_canceled', 'lead_time', 'arrival_date_year', 'arrival_date
 df[object_columns].head()
 
 drop_columns = [
-    'country', 'agent', 'company', 'reservation_status_date',
+    'hotel', 'country', 'agent', 'company', 'reservation_status_date',
     'arrival_date_week_number', 'arrival_date_day_of_month', 'arrival_date_year'
 ]
 
@@ -35,7 +35,7 @@ df = df.drop(labels=drop_columns, axis=1)
 print(df.head())
 
 pd.set_option('future.no_silent_downcasting', True)
-df['meal'] = df['meal'].replace({'Undefined':0, 'SC':0, 'BB':1, 'HB':2, 'FB':3})
+df['meal'] = df['meal'].replace({'Undefined':0, 'SC':0, 'BB':1, 'HB':2, 'FB':3}).astype(int)
 
 print(df['meal'].head())
 
@@ -46,6 +46,8 @@ one_hot_columns = [
 df = pd.get_dummies(df, columns=one_hot_columns, dtype=int)
 
 print(df.head())
+
+df = df.dropna()
 
 # Remove target columns
 remove_cols = ['is_canceled', 'reservation_status']
@@ -66,7 +68,7 @@ print("Testing Shape:", X_test.shape)
 torch.manual_seed(42)
 
 model = nn.Sequential(
-    nn.Linear(65, 36),
+    nn.Linear(69, 36),
     nn.ReLU(),
     nn.Linear(36, 18),
     nn.ReLU(),
@@ -88,7 +90,7 @@ for epoch in range(num_epochs):
     if (epoch + 1) % 100 == 0:
         predicted_labels = (predictions >= 0.5).int()
         accuracy = accuracy_score(y_train, predicted_labels)
-        print(f'Epoch [{epoch+1}/{num_epochs}], BCELoss: {BCELoss.item():.4f}, Accuracy: {accuracy.item():.4f}')
+        print(f'Epoch [{epoch+1}/{num_epochs}], BCELoss: {BCELoss.item():.4f}, Accuracy: {accuracy:.4f}')
 
 model.eval()
 
@@ -98,10 +100,10 @@ with torch.no_grad():
     accuracy = accuracy_score(y_test, test_predicted_labels)
     report = classification_report(y_test, test_predicted_labels)
     
-print(f'Accuracy: {accuracy.item():.4f}')
+print(f'Accuracy: {accuracy:.4f}')
 print(report)
 
-df['reservation_status'] = df['reservation_status'].replace({'Check-Out':2, 'Canceled':1, 'No-Show':0})
+df['reservation_status'] = df['reservation_status'].replace({'Check-Out':2, 'Canceled':1, 'No-Show':0}).astype(int)
 
 print(df['reservation_status'].head())
 
@@ -118,7 +120,7 @@ print("Testing Shape:", X_test.shape)
 torch.manual_seed(42)
 
 multiclass_model = nn.Sequential(
-    nn.Linear(65, 65),
+    nn.Linear(69, 65),
     nn.ReLU(),
     nn.Linear(65, 36),
     nn.ReLU(),
@@ -126,7 +128,7 @@ multiclass_model = nn.Sequential(
 )
 
 loss = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
+optimizer = optim.Adam(multiclass_model.parameters(), lr=0.01)
 
 num_epochs = 500
 for epoch in range(num_epochs):
@@ -139,7 +141,7 @@ for epoch in range(num_epochs):
     if (epoch + 1) % 100 == 0:
         predicted_labels = torch.argmax(predictions, dim=1)
         accuracy = accuracy_score(y_train, predicted_labels)
-        print(f'Epoch [{epoch+1}/{num_epochs}], BCELoss: {BCELoss.item():.4f}, Accuracy: {accuracy.item():.4f}')
+        print(f'Epoch [{epoch+1}/{num_epochs}], BCELoss: {BCELoss.item():.4f}, Accuracy: {accuracy:.4f}')
 
 model.eval()
 
@@ -149,5 +151,5 @@ with torch.no_grad():
     accuracy = accuracy_score(y_test, multiclass_predicted_labels)
     report = classification_report(y_test, multiclass_predicted_labels)
     
-print(f'Accuracy: {accuracy.item():.4f}')
+print(f'Accuracy: {accuracy:.4f}')
 print(report)
